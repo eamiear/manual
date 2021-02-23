@@ -1,0 +1,54 @@
+image: node:latest
+variables:
+  GITLAB_PAGES_SERVER_DIR: '/usr/local/nginx1159/html/gitlab/shared/pages'
+stages:
+  - setup
+  - build
+  - deploy
+
+cache:
+  paths:
+    - node_modules/
+    - .vuepress/dist/
+
+安装依赖:
+  stage: setup
+  cache:
+    paths:
+      - node_modules/
+  script:
+    - cnpm install --silent --no-optional
+  tags:
+    - 31-build-shell
+
+项目构建:
+  cache:
+    # paths:
+    #   - node_modules/
+    #   - dist/
+  stage: build
+  script:
+    - npm run docs:build
+  only:
+    - master
+    - develop
+  tags:
+    - 31-build-shell
+
+发布文档:
+  stage: deploy
+  script:
+    - mkdir -p $GITLAB_PAGES_SERVER_DIR/$CI_PROJECT_NAME
+    - rm -rf $GITLAB_PAGES_SERVER_DIR/$CI_PROJECT_NAME/*
+    - mv .vuepress/dist/* $GITLAB_PAGES_SERVER_DIR/$CI_PROJECT_NAME
+    - echo 'export SERVER_PATH = https://aliiot.on-bright.com:8090/$CI_PROJECT_NAME'
+    - echo '访问路径  $SERVER_PATH'
+  tags:
+    - 31-build-shell
+
+导出PDF:
+  stage: deploy
+  script:
+    - npm run export
+  tags:
+    - 31-build-shell
